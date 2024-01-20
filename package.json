@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "target": "module",
   "description": "A library for random code generation",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js"
   },
