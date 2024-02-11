@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { describe, expect, test } from '@jest/globals';
-import { bufferToBinaryString, calculateShannonEntropy, frequencyTest, generateCode, runsTest, validateCode } from './code';
+import { bufferToBinaryString, calculateShannonEntropy, frequencyTest, runsTest, validateCode } from './code';
 import { CodeOptions } from './code-options';
 import crypto from 'crypto';
 
