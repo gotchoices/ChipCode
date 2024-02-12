@@ -1,17 +1,17 @@
 import crypto from 'crypto';
 import { CodeOptions as CodeOptions } from './code-options';
-import { calculateShannonEntropy, checkSaltLength, frequencyTest, runsTest } from './code-validation';
+import { calculateShannonEntropy, getSaltLength, frequencyTest, runsTest } from './code-validation';
 import { CryptoHash } from 'chipcryptbase';
 
 export class CryptoHashImpl implements CryptoHash {
 	constructor(public readonly options: CodeOptions) { }
 
-	/** Ensures that the given code (salt) passes all of the tests for a Code */
+	/** Ensures that the given code (salt) passes all of the tests for high randomness */
 	isValid(code: string) {
-		return checkSaltLength(code, this.options.length)
+		return getSaltLength(code) >= this.options.byteLength
 			&& calculateShannonEntropy(code) >= this.options.minEntropy
-			&& frequencyTest(code, this.options.frequencyPValueThreshold)
-			&& runsTest(code, this.options.runsPValueThreshold);
+			&& frequencyTest(code) < this.options.frequencyPValueThreshold
+			&& runsTest(code) > this.options.runsPValueThreshold;
 	}
 
 	/** Generates a unique Code with sufficient entropy based on the given options.
@@ -24,16 +24,16 @@ export class CryptoHashImpl implements CryptoHash {
 			if (tries > this.options.maxGenerateTries) {
 				throw new Error('Unable to generate a Code with sufficient randomness');
 			}
-			candidate = crypto.randomBytes(this.options.length).toString('base64');
+			candidate = crypto.randomBytes(this.options.byteLength).toString('base64');
 			++tries;
 		} while (!this.isValid(candidate));
 		return candidate;
 	}
 
-	/** Generate anonymized identifier using a Code as a salt */
-	async makeNonce(identifier: string, code: string) {
+	/** Generate anonymized payload hash using a Code as a salt */
+	async makeNonce(payload: string, code: string) {
 		return crypto.createHash('sha256')
-			.update(identifier + code)
+			.update(payload + code)
 			.digest('base64');
 	}
 }

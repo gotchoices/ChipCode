@@ -12,7 +12,7 @@ export class CodeOptions {
      * The length of the generated Code in bytes.
      * Default value is 32.
      */
-    length = 32;
+    byteLength = 32;
 
     /**
      * The maximum number of attempts to generate a valid Code (with enough randomness) before erroring.

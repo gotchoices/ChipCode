@@ -1,8 +1,8 @@
-import { jest } from '@jest/globals';
 import { describe, expect, test } from '@jest/globals';
-import { bufferToBinaryString, calculateShannonEntropy, frequencyTest, runsTest, validateCode } from './code';
+import { bufferToBinaryString, calculateShannonEntropy, frequencyTest, runsTest } from './code-validation';
 import { CodeOptions } from './code-options';
 import crypto from 'crypto';
+import { CryptoHashImpl } from '.';
 
 describe('runsTest', () => {
 	test('Base64 conversions', () => {
@@ -19,27 +19,27 @@ describe('runsTest', () => {
 		const salt = '0SIAThaOI0FNxD48wx1M9zkwfaIWVi3ugu0hrNqvsGI='; // Example salt input
 		const threshold = 0.01; // Example threshold
 
-		const result = runsTest(salt, threshold);
+		const result = runsTest(salt);
 
-		expect(result).toBe(true);
+		expect(result).toBe(threshold);
 	});
 
 	test('should return true for a valid binary sequence', () => {
 		const salt = '1100101000101110'; // Example binary sequence
 		const threshold = 0.01; // Example threshold
 
-		const result = runsTest(binaryStringToBase64(salt), threshold);
+		const result = runsTest(binaryStringToBase64(salt));
 
-		expect(result).toBe(true);
+		expect(result).toBe(threshold);
 	});
 
 	test('should return false for an invalid binary sequence', () => {
 		const salt = '1111111100000000'; // Example binary sequence
 		const threshold = 0.01; // Example threshold
 
-		const result = runsTest(binaryStringToBase64(salt), threshold);
+		const result = runsTest(binaryStringToBase64(salt));
 
-		expect(result).toBe(false);
+		expect(result).toBe(threshold);
 	});
 });
 
@@ -64,8 +64,8 @@ describe('validateCode', () => {
 			const tid = crypto.randomBytes(32).toString('base64');
 			const tests = [
 				calculateShannonEntropy(tid) >= options.minEntropy ? 1 : 0,
-				frequencyTest(tid, options.frequencyPValueThreshold) ? 1 : 0,
-				runsTest(tid, options.runsPValueThreshold) ? 1 : 0,
+				frequencyTest(tid) < options.frequencyPValueThreshold ? 1 : 0,
+				runsTest(tid) > options.runsPValueThreshold ? 1 : 0,
 			];
 			tests.push(tests[0] && tests[1] && tests[2] ? 1 : 0);
 			tests.forEach((test, i) => {
@@ -81,8 +81,9 @@ describe('validateCode', () => {
 	test('should return true for a valid code', () => {
 		const salt = '0SIAThaOI0FNxD48wx1M9zkwfaIWVi3ugu0hrNqvsGI='; // Example salt input
 		const options = new CodeOptions();
+		const cryptoHash = new CryptoHashImpl(options);
 
-		const result = validateCode(salt, options);
+		const result = cryptoHash.isValid(salt);
 
 		expect(result).toBe(true);
 	});
@@ -90,8 +91,9 @@ describe('validateCode', () => {
 	test('should return false for an invalid code', () => {
 		const salt = 'AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRRSTTUUVV='; // Example salt input
 		const options = new CodeOptions();
+		const cryptoHash = new CryptoHashImpl(options);
 
-		const result = validateCode(salt, options);
+		const result = cryptoHash.isValid(salt);
 
 		expect(result).toBe(false);
 	});

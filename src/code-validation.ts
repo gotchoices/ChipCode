@@ -1,5 +1,8 @@
-export function checkSaltLength(salt: string, minLength: number): boolean {
-	return Buffer.byteLength(salt, 'base64') >= minLength;
+/**
+ * @returns the length of the given base64 salt in bytes.
+ */
+export function getSaltLength(salt: string): number {
+	return Buffer.byteLength(salt, 'base64');
 }
 
 /**
@@ -30,9 +33,10 @@ export function bufferToBinaryString(buffer: Buffer) {
 
 /**
  * The Frequency (Monobit) Test is used to assess the randomness of a sequence of bits.  This is part of the NIST Statistical Test Suite for Randomness
- * @returns true if the probability exceeds the given threshold
+ * A low p_value (close to 0) suggests that the observed sequence is consistent with the null hypothesis of randomness.
+ * @returns the probability value
  */
-export function frequencyTest(salt: string, threshold: number): boolean {
+export function frequencyTest(salt: string): number {
 	const binarySequence = bufferToBinaryString(Buffer.from(salt, 'base64'));
 	let sum = 0;
 	for (let i = 0; i < binarySequence.length; i++) {
@@ -40,9 +44,7 @@ export function frequencyTest(salt: string, threshold: number): boolean {
 	}
 
 	const s_obs = Math.abs(sum) / Math.sqrt(binarySequence.length);
-	const p_value = Math.exp(-2 * s_obs * s_obs);
-
-	return p_value < threshold; // Common threshold for the p-value
+	return Math.exp(-2 * s_obs * s_obs);
 }
 
 /**
@@ -77,9 +79,9 @@ function erfc(x: number): number {
  * This test checks the total number of runs in the sequence (a run is an uninterrupted sequence of identical bits).
  * The number of runs in a random sequence should follow a specific distribution.  This is part of the NIST Statistical Test Suite for Randomness.
  * A high p_value (close to 1) suggests that the observed sequence is consistent with the null hypothesis of randomness.
- * @returns true if the probability exceeds the given threshold
+ * @returns the probability value
  */
-export function runsTest(salt: string, threshold: number): boolean {
+export function runsTest(salt: string): number {
 	const binarySequence = bufferToBinaryString(Buffer.from(salt, 'base64'));
 	let totalRuns = 1;
 	let ones = 0;
@@ -93,11 +95,9 @@ export function runsTest(salt: string, threshold: number): boolean {
 
 	const pi = ones / (binarySequence.length * 1.0);
 	if (Math.abs(pi - 0.5) >= 2 / Math.sqrt(binarySequence.length)) {
-		return false; // The test is not applicable if pi is too far from 0.5
+		return 0; // The test is not applicable if pi is too far from 0.5
 	}
 
 	const vObs = totalRuns;
-	const p_value = erfc(Math.abs(vObs - 2 * binarySequence.length * pi * (1 - pi)) / (2 * Math.sqrt(2 * binarySequence.length) * pi * (1 - pi)));
-
-	return p_value > threshold;
+	return erfc(Math.abs(vObs - 2 * binarySequence.length * pi * (1 - pi)) / (2 * Math.sqrt(2 * binarySequence.length) * pi * (1 - pi)));
 }
