@@ -1,16 +1,15 @@
 /**
  * @returns the length of the given base64 salt in bytes.
  */
-export function getSaltLength(salt: string): number {
-	return Buffer.byteLength(salt, 'base64');
+export function getSaltLength(data: Uint8Array): number {
+	return data.length;
 }
 
 /**
  * Shannon entropy is a measure of randomness present in a data.  The Shannon entropy value in this context will always be between 0 and 1,
  * regardless of the length of the input. This value represents the average uncertainty or randomness per bit in the given binary sequence.
  */
-export function calculateShannonEntropy(salt: string): number {
-	const binarySequence = bufferToBinaryString(Buffer.from(salt, 'base64'));
+export function calculateShannonEntropy(binarySequence: string): number {
 	const probabilities = new Map<string, number>();
 
 	for (const bit of binarySequence) {
@@ -23,21 +22,12 @@ export function calculateShannonEntropy(salt: string): number {
 	}, 0);
 }
 
-export function bufferToBinaryString(buffer: Buffer) {
-	let binaryString = '';
-	for (const byte of buffer) {
-		binaryString += byte.toString(2).padStart(8, '0');
-	}
-	return binaryString;
-}
-
 /**
  * The Frequency (Monobit) Test is used to assess the randomness of a sequence of bits.  This is part of the NIST Statistical Test Suite for Randomness
  * A low p_value (close to 0) suggests that the observed sequence is consistent with the null hypothesis of randomness.
  * @returns the probability value
  */
-export function frequencyTest(salt: string): number {
-	const binarySequence = bufferToBinaryString(Buffer.from(salt, 'base64'));
+export function frequencyTest(binarySequence: string): number {
 	let sum = 0;
 	for (let i = 0; i < binarySequence.length; i++) {
 		sum += binarySequence[i] === '0' ? -1 : 1;
@@ -81,8 +71,7 @@ function erfc(x: number): number {
  * A high p_value (close to 1) suggests that the observed sequence is consistent with the null hypothesis of randomness.
  * @returns the probability value
  */
-export function runsTest(salt: string): number {
-	const binarySequence = bufferToBinaryString(Buffer.from(salt, 'base64'));
+export function runsTest(binarySequence: string): number {
 	let totalRuns = 1;
 	let ones = 0;
 
@@ -100,4 +89,12 @@ export function runsTest(salt: string): number {
 
 	const vObs = totalRuns;
 	return erfc(Math.abs(vObs - 2 * binarySequence.length * pi * (1 - pi)) / (2 * Math.sqrt(2 * binarySequence.length) * pi * (1 - pi)));
+}
+
+export function arrayToBinaryString(array: Uint8Array) {
+	let binaryString = '';
+	for (const byte of array) {
+		binaryString += byte.toString(2).padStart(8, '0');
+	}
+	return binaryString;
 }

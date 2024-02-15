@@ -1,45 +1,51 @@
 import { describe, expect, test } from '@jest/globals';
-import { bufferToBinaryString, calculateShannonEntropy, frequencyTest, runsTest } from './code-validation';
+import { arrayToBinaryString, calculateShannonEntropy, frequencyTest, runsTest } from './code-validation';
 import { CodeOptions } from './code-options';
 import crypto from 'crypto';
-import { CryptoHashImpl } from '.';
+import { CryptoHashImpl, extractExpiration, interleveExpiration } from '.';
 
 describe('runsTest', () => {
 	test('Base64 conversions', () => {
 		var bytes = Buffer.from(binaryStringToBase64('1010101100011010'), 'base64');
 		var bytesBase64 = bytes.toString('base64');
 		var backToBytes = Buffer.from(bytesBase64, 'base64');
-		const binarySequence = bufferToBinaryString(backToBytes);
+		const binarySequence = arrayToBinaryString(backToBytes);
 
 		expect(backToBytes.toString('base64')).toBe(bytesBase64);
-		expect(binarySequence).toBe(bufferToBinaryString(bytes));
+		expect(binarySequence).toBe(arrayToBinaryString(bytes));
 	});
 
-	test('should return true for a valid salt input', () => {
-		const salt = '0SIAThaOI0FNxD48wx1M9zkwfaIWVi3ugu0hrNqvsGI='; // Example salt input
-		const threshold = 0.01; // Example threshold
+	test('should be high for highly random sequence', () => {
+		const salt = '0SIAThaOI0FNxD48wx1M9zkwfaIWVi3ugu0hrNqvsGI=';
+		const code = Buffer.from(salt, 'base64'); // Example salt input
+		const binary = arrayToBinaryString(code);
+		const pval = 0.8636360202644158;
 
-		const result = runsTest(salt);
+		const result = runsTest(binary);
 
-		expect(result).toBe(threshold);
+		expect(result).toBe(pval);
 	});
 
-	test('should return true for a valid binary sequence', () => {
-		const salt = '1100101000101110'; // Example binary sequence
-		const threshold = 0.01; // Example threshold
+	test('medium value for fairly distinct binary sequence', () => {
+		const salt = binaryStringToBase64('1100101000101110'); // Example binary sequence
+		const code = Buffer.from(salt, 'base64'); // Example salt input
+		const binary = arrayToBinaryString(code);
+		const pval = 0.31731052766472745;
 
-		const result = runsTest(binaryStringToBase64(salt));
+		const result = runsTest(binary);
 
-		expect(result).toBe(threshold);
+		expect(result).toBe(pval);
 	});
 
-	test('should return false for an invalid binary sequence', () => {
-		const salt = '1111111100000000'; // Example binary sequence
-		const threshold = 0.01; // Example threshold
+	test('low value for repeating binary sequence', () => {
+		const salt = binaryStringToBase64('1111111100000000'); // Example binary sequence
+		const code = Buffer.from(salt, 'base64'); // Example salt input
+		const binary = arrayToBinaryString(code);
+		const pval = 0.0026999345626295135;
 
-		const result = runsTest(binaryStringToBase64(salt));
+		const result = runsTest(binary);
 
-		expect(result).toBe(threshold);
+		expect(result).toBe(pval);
 	});
 });
 
@@ -61,11 +67,13 @@ describe('validateCode', () => {
 		const options = new CodeOptions();
 		let valid = [0,0,0,0];
 		for (let i = 0; i < 1000; i++) {
-			const tid = crypto.randomBytes(32).toString('base64');
+			const array = crypto.randomBytes(32);
+			interleveExpiration(array, 1707973767682); // Example current time
+			const binary = arrayToBinaryString(array);
 			const tests = [
-				calculateShannonEntropy(tid) >= options.minEntropy ? 1 : 0,
-				frequencyTest(tid) < options.frequencyPValueThreshold ? 1 : 0,
-				runsTest(tid) > options.runsPValueThreshold ? 1 : 0,
+				calculateShannonEntropy(binary) >= options.minEntropy ? 1 : 0,
+				frequencyTest(binary) < options.frequencyPValueThreshold ? 1 : 0,
+				runsTest(binary) > options.runsPValueThreshold ? 1 : 0,
 			];
 			tests.push(tests[0] && tests[1] && tests[2] ? 1 : 0);
 			tests.forEach((test, i) => {
@@ -78,12 +86,22 @@ describe('validateCode', () => {
 		console.log(`${valid[3]} of 1000 passed all tests`);
 	});
 
-	test('should return true for a valid code', () => {
+	test('expiration encoding and decoding work', () => {
 		const salt = '0SIAThaOI0FNxD48wx1M9zkwfaIWVi3ugu0hrNqvsGI='; // Example salt input
+		const buffer = Buffer.from(salt, 'base64');
+		const expiration = Math.floor((Date.now() + 1000 * 60 * 60 * 24 * 365) / 60000) * 60000; // 1 year from now (in minutes)
+		interleveExpiration(buffer, expiration);
+		const extracted = extractExpiration(buffer);
+		expect(extracted).toBe(expiration);
+	});
+
+	test('should return true for a valid code', async () => {
+		const now = 1707973767682; // Example current time (don't let test expire)
+		const salt = 'MOsWm+dBW/6h/rYo+IT0cPrjTXTnpFQq+Byb2qs0PJo='; // Example salt input with expiration 1 year from "now"
 		const options = new CodeOptions();
 		const cryptoHash = new CryptoHashImpl(options);
 
-		const result = cryptoHash.isValid(salt);
+		const result = cryptoHash.isValid(salt, now);
 
 		expect(result).toBe(true);
 	});
