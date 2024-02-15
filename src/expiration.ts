@@ -46,9 +46,3 @@ export function extractExpiration(data: Uint8Array) {
 	// Return in milliseconds
 	return expirationInMinutes * 60000;
 }
-
-/** @returns true if the given session code is expired */
-export function isExpired(codeBytes: Uint8Array, now: number = Date.now()) {
-	const expiration = extractExpiration(codeBytes);
-	return expiration < now;
-}
