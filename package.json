@@ -1,6 +1,6 @@
 {
   "name": "chipcode",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "target": "module",
   "description": "A library for random code generation",
   "main": "./dist/index.js",

@@ -29,7 +29,6 @@ export async function interleveExpiration(data: Uint8Array, expiration: number) 
 	for (let i = 0; i < 32; ++i) {
 		data[i] = (data[i] & 0xFE) | ((encoding >> i) & 1);
 	}
-	console.log(arrayToBinaryString(data).split('').filter((_, i) => i % 8 === 7).join(''));
 }
 
 function int32ToBinary(num: number): Uint8Array {
