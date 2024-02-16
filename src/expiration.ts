@@ -1,4 +1,4 @@
-import { calculateShannonEntropy } from "./code-validation";
+import { arrayToBinaryString, calculateShannonEntropy } from "./code-validation";
 
 /** Bit patterns masked with the expiration date to avoid
  * The two most significant 2 bits are ignored
@@ -19,16 +19,26 @@ export async function interleveExpiration(data: Uint8Array, expiration: number) 
 
 	const encodings = patterns.map((p, i) => (p & 0x3FFFFFFF) ^ ((i << 30) | expirationInMinutes));
 	const entropies = encodings.map(v => {
-		const base64String = btoa(String.fromCharCode((v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF));
-		return calculateShannonEntropy(base64String);
+		const encodingBin = arrayToBinaryString(int32ToBinary(v));
+		return calculateShannonEntropy(encodingBin);
 	});
 	const bestIndex = entropies.indexOf(Math.max(...entropies));
 	const encoding = encodings[bestIndex];
 
-	// Interleave the expiration time bits with the random data
+	// Interleave the expiration time bits with the random data, LSB first
 	for (let i = 0; i < 32; ++i) {
 		data[i] = (data[i] & 0xFE) | ((encoding >> i) & 1);
 	}
+	console.log(arrayToBinaryString(data).split('').filter((_, i) => i % 8 === 7).join(''));
+}
+
+function int32ToBinary(num: number): Uint8Array {
+  const arr = new Uint8Array(4);
+  // Populate the array with the bytes of the number
+  for (let i = 0; i < 4; i++) {
+    arr[3 - i] = (num / (0x100 ** i)) & 0xff;
+  }
+	return arr;
 }
 
 /** @returns the expiration of the given session code */
@@ -40,9 +50,9 @@ export function extractExpiration(data: Uint8Array) {
 		encoding |= bit << i;
 	}
 	// Extract the pattern index from the 2 most significant bits
-	const pattern = (encoding & 0xC0000000) >> 30;
+	const pattern = (encoding >> 30) & 0x03;
 	// Unmask the expiration time from the remaining 30 bits
-	const expirationInMinutes = (patterns[pattern] & 0x3FFFFFFF) ^ encoding;
+	const expirationInMinutes = (patterns[pattern] & 0x3FFFFFFF) ^ (encoding & 0x3FFFFFFF);
 	// Return in milliseconds
 	return expirationInMinutes * 60000;
 }

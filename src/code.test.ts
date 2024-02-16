@@ -2,7 +2,8 @@ import { describe, expect, test } from '@jest/globals';
 import { arrayToBinaryString, calculateShannonEntropy, frequencyTest, runsTest } from './code-validation';
 import { CodeOptions } from './code-options';
 import crypto from 'crypto';
-import { CryptoHashImpl, extractExpiration, interleveExpiration } from '.';
+import { extractExpiration, interleveExpiration } from './expiration';
+import { CryptoHashImpl } from './code';
 
 describe('runsTest', () => {
 	test('Base64 conversions', () => {
@@ -89,7 +90,7 @@ describe('validateCode', () => {
 	test('expiration encoding and decoding work', () => {
 		const salt = '0SIAThaOI0FNxD48wx1M9zkwfaIWVi3ugu0hrNqvsGI='; // Example salt input
 		const buffer = Buffer.from(salt, 'base64');
-		const expiration = Math.floor((Date.now() + 1000 * 60 * 60 * 24 * 365) / 60000) * 60000; // 1 year from now (in minutes)
+		const expiration = Math.floor(1707973767682 / 60000) * 60000; // 1 year from now (in minutes)
 		interleveExpiration(buffer, expiration);
 		const extracted = extractExpiration(buffer);
 		expect(extracted).toBe(expiration);
