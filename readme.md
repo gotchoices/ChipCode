@@ -2,7 +2,7 @@
 
 ### Purpose
 
-ChipCode library, written in Typescript, is for generating and validating secure hashes (Nonces) using highly random salt values (Codes).  These Codes and Nonces may be used for distributed protocols; the aim is to enable data within a given search discovery session, for instance, to be encrypted with a session code such that identifiers are anonymized, yet are deterministic within the session.
+ChipCode library, written in Typescript, is for generating and validating secure hash codes (Nonces) using highly random salt values (Codes).  These Codes and Nonces may be used for distributed protocols; the aim is to enable data within a given search discovery session, for instance, to be encrypted with a session code such that identifiers are anonymized, yet are deterministic within the session.
 
 * **High randomness** - This library utilizes algorithms published by NIST to try to ensure that the generated Codes have sufficient randomness.
 * **Expires** - An expiration date is embedded, which allows implementations to verify that the Code remains valid.  Expiration dates are rounded down to the minute.
