@@ -102,9 +102,8 @@ describe('validateCode', () => {
 		const options = new CodeOptions();
 		const cryptoHash = new CryptoHashImpl(options);
 
-		const result = cryptoHash.isValid(salt, now);
-
-		expect(result).toBe(true);
+		expect(cryptoHash.isValid(salt)).toBe(true);
+		expect(cryptoHash.isCurrentlyValid(salt, now)).toBe(true);
 	});
 
 	test('should return false for an invalid code', () => {

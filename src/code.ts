@@ -6,15 +6,28 @@ import { extractExpiration, interleveExpiration } from './expiration';
 
 export class CryptoHashImpl implements CryptoHash {
 	constructor(public readonly options: CodeOptions) { }
+
 	/** Ensures that the given code (salt) passes all of the tests for high randomness */
-	isValid(code: string, now: number = Date.now()) {
-		return this.isValidBin(base64ToArray(code), now);
+	isValid(code: string) {
+		return this.isValidBin(base64ToArray(code));
 	}
 
-	/** Ensures that the given code (salt) passes all of the tests for high randomness
-	 * Note: this is not part of the interface
-	*/
-	isValidBin(code: Uint8Array, now: number = Date.now()) {
+	/** Ensures that the given code (salt) passes all of the tests for high randomness */
+	isValidBin(code: Uint8Array) {
+		const binary = arrayToBinaryString(code);
+		return getSaltLength(code) >= this.options.byteLength
+			&& calculateShannonEntropy(binary) >= this.options.minEntropy
+			&& frequencyTest(binary) < this.options.frequencyPValueThreshold
+			&& runsTest(binary) > this.options.runsPValueThreshold;
+	}
+
+	/** Ensures that the given code (salt) passes all of the tests for high randomness and isn't expired */
+	isCurrentlyValid(code: string, now: number = Date.now()) {
+		return this.isCurrentlyValidBin(base64ToArray(code), now);
+	}
+
+	/** Ensures that the given code (salt) passes all of the tests for high randomness and is not expired */
+	isCurrentlyValidBin(code: Uint8Array, now: number = Date.now()) {
 		const binary = arrayToBinaryString(code);
 		return !this.isExpiredBin(code, now)
 			&& getSaltLength(code) >= this.options.byteLength
@@ -63,7 +76,7 @@ export class CryptoHashImpl implements CryptoHash {
 			candidate = crypto.randomBytes(this.options.byteLength);
 			interleveExpiration(candidate, now + this.options.ageMs);
 			++tries;
-		} while (!this.isValidBin(candidate));
+		} while (!this.isCurrentlyValidBin(candidate));
 		return candidate;
 	}
 
