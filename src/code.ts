@@ -5,7 +5,7 @@ import { CryptoHash, arrayToBase64, base64ToArray } from 'chipcryptbase';
 import { extractExpiration, interleveExpiration } from './expiration';
 
 export class CryptoHashImpl implements CryptoHash {
-	constructor(public readonly options: CodeOptions) { }
+	constructor(public readonly options: CodeOptions = new CodeOptions()) { }
 
 	/** Ensures that the given code (salt) passes all of the tests for high randomness */
 	isValid(code: string) {
