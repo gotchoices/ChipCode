@@ -1,6 +1,6 @@
 {
   "name": "chipcode",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "target": "module",
   "description": "A library for generating and validating secure hash codes",
   "main": "./dist/index.js",

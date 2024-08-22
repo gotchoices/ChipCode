@@ -5,7 +5,7 @@
 ChipCode library, written in Typescript, is for generating and validating secure hash codes (Nonces) using highly random salt values (Codes).  These Codes and Nonces may be used for distributed protocols; the aim is to enable data within a given search discovery session, for instance, to be encrypted with a session code such that identifiers are anonymized, yet are deterministic within the session.
 
 * **High randomness** - This library utilizes algorithms published by NIST to try to ensure that the generated Codes have sufficient randomness.
-* **Expires** - An expiration date is embedded, which allows implementations to verify that the Code remains valid.  Expiration dates are rounded down to the minute.
+* **Expires** - An expiration date is embedded, which allows implementations to verify that the Code remains valid.  Expiration dates have a 10 second accuracy (floored).
 * **String or byte encoding** - Code length: 32 bytes or 44 characters when base 64 encoded.
 
 This library was built to support "lifts" in [MyChips](https://github.com/gotchoices/MyCHIPs), but may be suitable for other peer-to-peer systems.  
@@ -41,7 +41,7 @@ Should always produce the same nonce given the same payload and salt Code.
 
 ####Putting together:
 
-  var cryptoHash = new CryptoHash(new CodeOptions());
+  var cryptoHash = new CryptoHash({ ageMs: 1000 * 60 * 10 /* 10 minute expiration */ });
 	var code = cryptoHash.generate();
 	var nonce1 = cryptoHash.makeNonce('xyz', code);
 	var nonce2 = cryptoHash.makeNonce('xyz', code);
@@ -49,7 +49,7 @@ Should always produce the same nonce given the same payload and salt Code.
 
 ### Configuration
 
-`CodeOptions` interface:
+`CodeOptions` type:
 * `minEntropy` - The minimum entropy required for the generated Code.  
   * Default value is 0.996, which represents 99.6% of the maximum entropy.
 * `byteLength` - The length of the generated Code in bytes. This cannot be less than 32 bytes. 

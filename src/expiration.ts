@@ -1,23 +1,23 @@
 import { arrayToBinaryString, calculateShannonEntropy } from "./code-validation";
 
-/** Bit patterns masked with the expiration date to avoid
+/** Bit patterns masked with the expiration date to avoid harming apparent randomness
  * The two most significant 2 bits are ignored
 */
 const patterns = [0x15A45D17, 0x2A5BA2E8, 0x2AAAAAAA, 0x15555555];
 
 /** Interleves an expiration date with a given random code
- * With a 30 byte code, the expiration can go up past the year 10,000
+ * With a 30 byte code, the expiration can go up to the year 2,310
 */
 export async function interleveExpiration(data: Uint8Array, expiration: number) {
 	if (data.length < 32) {
 		throw new Error('Data length must be at least 32 bytes');
 	}
-	const expirationInMinutes = Math.floor(expiration / 60000);
-	if (expirationInMinutes > 0x3FFFFFFF) {
+	const expDecaSeconds = Math.floor(expiration / 10000);
+	if (expDecaSeconds > 0x3FFFFFFF) {
 		throw new Error('Expiration is too far in the future.  Greetings from the 21st century!');
 	}
 
-	const encodings = patterns.map((p, i) => (p & 0x3FFFFFFF) ^ ((i << 30) | expirationInMinutes));
+	const encodings = patterns.map((p, i) => (p & 0x3FFFFFFF) ^ ((i << 30) | expDecaSeconds));
 	const entropies = encodings.map(v => {
 		const encodingBin = arrayToBinaryString(int32ToBinary(v));
 		return calculateShannonEntropy(encodingBin);
@@ -51,7 +51,7 @@ export function extractExpiration(data: Uint8Array) {
 	// Extract the pattern index from the 2 most significant bits
 	const pattern = (encoding >> 30) & 0x03;
 	// Unmask the expiration time from the remaining 30 bits
-	const expirationInMinutes = (patterns[pattern] & 0x3FFFFFFF) ^ (encoding & 0x3FFFFFFF);
+	const expDecaSeconds = (patterns[pattern] & 0x3FFFFFFF) ^ (encoding & 0x3FFFFFFF);
 	// Return in milliseconds
-	return expirationInMinutes * 60000;
+	return expDecaSeconds * 10000;
 }

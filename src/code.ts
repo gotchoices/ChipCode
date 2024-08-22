@@ -1,11 +1,14 @@
 import crypto from 'crypto';
-import { CodeOptions } from './code-options';
+import { codeOptionDefaults, CodeOptions } from './code-options';
 import { calculateShannonEntropy, getSaltLength, frequencyTest, runsTest, arrayToBinaryString } from './code-validation';
 import { CryptoHash, arrayToBase64, base64ToArray } from 'chipcryptbase';
 import { extractExpiration, interleveExpiration } from './expiration';
 
 export class CryptoHashImpl implements CryptoHash {
-	constructor(public readonly options: CodeOptions = new CodeOptions()) { }
+	private options: CodeOptions;
+	constructor(optionOverrides: Partial<CodeOptions> = {}) {
+		this.options = { ...codeOptionDefaults, ...optionOverrides };
+	}
 
 	/** Ensures that the given code (salt) passes all of the tests for high randomness */
 	isValid(code: string) {
